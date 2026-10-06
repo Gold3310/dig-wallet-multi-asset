@@ -1,78 +1,110 @@
-# dig-wallet-multi-asset
+const unlockBtn = document.getElementById("unlockBtn");
+const deriveBtn = document.getElementById("deriveBtn");
+const signBtn = document.getElementById("signBtn");
+const phraseInput = document.getElementById("phrase");
+const passwordInput = document.getElementById("password");
+const addressInput = document.getElementById("addressInput");
+const assetSelect = document.getElementById("assetSelect");
+const messageInput = document.getElementById("messageInput");
+const unlockStatus = document.getElementById("unlockStatus");
+const deriveStatus = document.getElementById("deriveStatus");
+const addressList = document.getElementById("addressList");
 
-A browser-based multi-asset wallet prototype for Chia, Ethereum, and Bitcoin. It is designed to show how one wallet can derive multiple addresses from a single root and let the user paste an address to generate the matching key material for the selected asset.
+async function unlockWallet() {
+  const phrase = phraseInput.value.trim();
+  const password = passwordInput.value;
 
-This project is a starter implementation for a web demo and is not yet production-ready for live custody or real transaction signing on-chain.
+  unlockStatus.textContent = "Unlocking...";
 
-## What it does
+  const response = await fetch("/api/unlock", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phrase, password }),
+  });
 
-- Accepts a 24-word recovery phrase
-- Derives a deterministic seed from the phrase
-- Generates a Chia-style address, Ethereum address, and Bitcoin address
-- Lets the user paste an address and derive the matching key for the selected asset
-- Signs a sample message with the derived key
-- Presents everything in a clean browser UI
+  const data = await response.json();
 
-## Project status
+  if (!response.ok) {
+    unlockStatus.textContent = data.error || "Unlock failed.";
+    return;
+  }
 
-- Chia: demo address generation only; production-grade Chia BLS derivation should use `dig-session` + `blspy`
-- Ethereum: deterministic ECDSA address generation implemented
-- Bitcoin: deterministic ECDSA address generation implemented
+  unlockStatus.textContent = "Wallet unlocked successfully.";
+  renderAddresses(data.addresses);
+}
 
-## Quick start in GitHub Codespaces
+function renderAddresses(addresses) {
+  addressList.innerHTML = "";
 
-1. Open this repo in GitHub Codespaces.
-2. In the terminal run:
+  for (const [asset, value] of Object.entries(addresses)) {
+    const item = document.createElement("div");
+    item.className = "asset-item";
+    item.innerHTML = `
+      <strong>${asset}</strong>
+      <p>${value}</p>
+    `;
+    addressList.appendChild(item);
+  }
+}
 
-```bash
-pip install -r requirements.txt
-python app.py
-```
+async function deriveKey() {
+  const asset = assetSelect.value;
+  const address = addressInput.value.trim();
 
-3. Open the forwarded browser link shown by the terminal.
+  if (!address) {
+    deriveStatus.textContent = "Please paste the address first.";
+    return;
+  }
 
-## Local run
+  deriveStatus.textContent = "Deriving key...";
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python app.py
-```
+  const response = await fetch("/api/derive", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ asset, address }),
+  });
 
-Then open:
+  const data = await response.json();
 
-http://localhost:5000
+  if (!response.ok) {
+    deriveStatus.textContent = data.error || "Derivation failed.";
+    return;
+  }
 
-## Project structure
+  deriveStatus.innerHTML = `
+    <strong>Match:</strong> ${data.match}<br>
+    <strong>Address:</strong> ${data.address}<br>
+    <strong>Private Key:</strong> ${data.private_key}
+  `;
+}
 
-```text
-.
-├── README.md
-├── requirements.txt
-├── app.py
-├── backend/
-│   └── wallet.py
-├── static/
-│   ├── app.js
-│   ├── index.html
-│   └── style.css
-└── .gitignore
-```
+async function signMessage() {
+  const asset = assetSelect.value;
+  const message = messageInput.value.trim() || "hello world";
 
-## Usage
+  deriveStatus.textContent = "Signing...";
 
-1. Enter a valid 24-word BIP-39 phrase.
-2. Enter a password to unlock the wallet.
-3. View all generated addresses.
-4. Paste any generated address into the lookup box.
-5. Press "Generate key" to derive the matching key for that asset.
-6. Press "Sign message" to generate a signature sample.
+  const response = await fetch("/api/sign", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ asset, message }),
+  });
 
-## Security note
+  const data = await response.json();
 
-This demo intentionally keeps keys in memory only. Do not use it for real funds or production custody.
+  if (!response.ok) {
+    deriveStatus.textContent = data.error || "Signing failed.";
+    return;
+  }
 
-## License
+  deriveStatus.textContent = `Signature: ${data.signature}`;
+}
 
-GPL-2.0-only
+unlockBtn.addEventListener("click", unlockWallet);
+deriveBtn.addEventListener("click", deriveKey);
+signBtn.addEventListener("click", signMessage);
+
+// Mobile polish: keep the UI compact and easy to tap.
+if (window.matchMedia("(max-width: 480px)").matches) {
+  document.body.style.fontSize = "15px";
+}
