@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi-Asset Wallet Demo</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>Multi-Asset Wallet</h1>
+        <p>Unlock a wallet and derive Chia, Ethereum, and Bitcoin addresses.</p>
+      </header>
+
+      <section class="panel">
+        <h2>Unlock wallet</h2>
+        <label for="phrase">24-word recovery phrase</label>
+        <textarea id="phrase" rows="3" placeholder="abandon ..."></textarea>
+
+        <label for="password">Password</label>
+        <input id="password" type="password" placeholder="Enter password" />
+
+        <button id="unlockBtn">Unlock</button>
+        <div id="unlockStatus" class="status"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Addresses</h2>
+        <div id="addressList" class="address-list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Paste address</h2>
+        <select id="assetSelect">
+          <option value="chia">Chia</option>
+          <option value="ethereum">Ethereum</option>
+          <option value="bitcoin">Bitcoin</option>
+        </select>
+        <input id="addressInput" type="text" placeholder="Paste address here" />
+        <div class="button-row">
+          <button id="deriveBtn">Generate key</button>
+          <button id="signBtn" class="secondary">Sign message</button>
+        </div>
+        <div id="deriveStatus" class="status"></div>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

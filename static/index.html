@@ -1,0 +1,130 @@
+import hashlib
+import json
+import re
+from typing import Dict, Any
+
+from mnemonic import Mnemonic
+from Crypto.Hash import keccak
+from ecdsa import SigningKey, SECP256k1
+import base58
+
+
+class WalletCore:
+    def __init__(self):
+        self.mnemonic = Mnemonic("english")
+        self.seed = None
+        self.password = None
+        self.addresses = {}
+        self.private_keys = {}
+
+    def unlock(self, phrase: str, password: str) -> dict:
+        phrase = self._normalize_phrase(phrase)
+        if not self.mnemonic.check(phrase):
+            raise ValueError("Invalid BIP-39 recovery phrase.")
+
+        seed = self.mnemonic.to_seed(phrase)
+        self.seed = hashlib.sha256(seed).digest()
+        self.password = password
+
+        self.private_keys = {}
+        self.addresses = {
+            "chia": self._derive_chia_address(),
+            "ethereum": self._derive_ethereum_address(),
+            "bitcoin": self._derive_bitcoin_address(),
+        }
+        return self.addresses
+
+    def _normalize_phrase(self, phrase: str) -> str:
+        phrase = phrase.strip().replace("\n", " ")
+        phrase = re.sub(r"\s+", " ", phrase)
+        return phrase.strip()
+
+    def _derive_chia_address(self) -> str:
+        if self.seed is None:
+            raise ValueError("Wallet not unlocked.")
+        digest = hashlib.sha256(self.seed + b"chia").hexdigest()
+        return "xch1" + digest[:40]
+
+    def _derive_ethereum_address(self) -> str:
+        if self.seed is None:
+            raise ValueError("Wallet not unlocked.")
+        private_key = hashlib.sha256(self.seed + b"ethereum").digest()
+        self.private_keys["ethereum"] = private_key.hex()
+        key = SigningKey.from_string(private_key, curve=SECP256k1)
+        pub = key.get_verifying_key().to_string("uncompressed")
+        pub = pub[1:]
+        k = keccak.new(digest_bits=256)
+        k.update(pub)
+        address = "0x" + k.digest()[-20:].hex()
+        return address
+
+    def _derive_bitcoin_address(self) -> str:
+        if self.seed is None:
+            raise ValueError("Wallet not unlocked.")
+        private_key = hashlib.sha256(self.seed + b"bitcoin").digest()
+        self.private_keys["bitcoin"] = private_key.hex()
+        key = SigningKey.from_string(private_key, curve=SECP256k1)
+        pub = key.get_verifying_key().to_string("uncompressed")
+        pub = pub[1:]
+        hash160 = hashlib.new("ripemd160", hashlib.sha256(pub).digest()).digest()
+        payload = b"\x00" + hash160
+        checksum = hashlib.sha256(hashlib.sha256(payload).digest()).digest()[:4]
+        address = base58.b58encode(payload + checksum).decode("ascii")
+        return address
+
+    def derive_for_address(self, asset: str, address: str) -> Dict[str, Any]:
+        if self.seed is None:
+            raise ValueError("Wallet not unlocked.")
+
+        if asset not in {"chia", "ethereum", "bitcoin"}:
+            raise ValueError("Unsupported asset.")
+
+        expected = self.addresses.get(asset)
+        if not expected:
+            raise ValueError("No address for that asset.")
+
+        if address.lower() != expected.lower():
+            raise ValueError("Address does not match the derived wallet address for this asset.")
+
+        value = self.private_keys.get(asset)
+        if not value:
+            value = self._rederive_private_key(asset)
+
+        return {
+            "asset": asset,
+            "address": expected,
+            "private_key": value,
+            "match": True,
+        }
+
+    def _rederive_private_key(self, asset: str) -> str:
+        salt = {
+            "chia": b"chia",
+            "ethereum": b"ethereum",
+            "bitcoin": b"bitcoin",
+        }[asset]
+        private_key = hashlib.sha256(self.seed + salt).digest()
+        self.private_keys[asset] = private_key.hex()
+        return private_key.hex()
+
+    def sign_message(self, asset: str, message: str) -> str:
+        if self.seed is None:
+            raise ValueError("Wallet not unlocked.")
+
+        if asset not in {"chia", "ethereum", "bitcoin"}:
+            raise ValueError("Unsupported asset.")
+
+        private_value = self.private_keys.get(asset)
+        if not private_value:
+            private_value = self._rederive_private_key(asset)
+
+        private_key = bytes.fromhex(private_value)
+        key = SigningKey.from_string(private_key, curve=SECP256k1)
+
+        if asset in {"ethereum", "bitcoin"}:
+            message_bytes = message.encode("utf-8")
+            signature = key.sign_deterministic(message_bytes, hashfunc=hashlib.sha256)
+            return signature.hex()
+
+        digest = hashlib.sha256(message.encode("utf-8")).hexdigest()
+        return digest
