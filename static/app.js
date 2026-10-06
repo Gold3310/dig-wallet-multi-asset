@@ -5,7 +5,6 @@
 :root {
   --bg: #07111f;
   --panel: rgba(15, 23, 42, 0.85);
-  --panel-strong: #0f172a;
   --border: rgba(148, 163, 184, 0.24);
   --text: #e2e8f0;
   --muted: #94a3b8;
@@ -104,14 +103,6 @@ select {
   padding: 14px 14px;
   outline: none;
   font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-textarea:focus,
-input:focus,
-select:focus {
-  border-color: rgba(56, 189, 248, 0.8);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
 }
 
 textarea {
@@ -128,12 +119,6 @@ textarea {
   font-weight: 700;
   font-size: 1rem;
   margin-top: 14px;
-  transition: transform 0.15s ease, opacity 0.15s ease;
-}
-
-.primary-btn:active,
-.secondary-btn:active {
-  transform: scale(0.99);
 }
 
 .primary-btn {
@@ -144,6 +129,11 @@ textarea {
 .secondary-btn {
   background: var(--secondary);
   color: var(--secondary-text);
+}
+
+.compact {
+  padding-top: 12px;
+  padding-bottom: 12px;
 }
 
 .status {
@@ -181,17 +171,6 @@ textarea {
   font-size: 0.82rem;
   line-height: 1.5;
   overflow-wrap: anywhere;
-}
-
-.button-row {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.button-row .primary-btn,
-.button-row .secondary-btn {
-  margin-top: 0;
 }
 
 @media (min-width: 700px) {

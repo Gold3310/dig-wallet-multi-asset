@@ -103,8 +103,3 @@ async function signMessage() {
 unlockBtn.addEventListener("click", unlockWallet);
 deriveBtn.addEventListener("click", deriveKey);
 signBtn.addEventListener("click", signMessage);
-
-// Mobile polish: keep the UI compact and easy to tap.
-if (window.matchMedia("(max-width: 480px)").matches) {
-  document.body.style.fontSize = "15px";
-}

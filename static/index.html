@@ -21,7 +21,6 @@
         <div class="card-header">
           <h2>Unlock</h2>
         </div>
-
         <label for="phrase">Recovery phrase</label>
         <textarea id="phrase" rows="4" placeholder="abandon abandon abandon…"></textarea>
 
@@ -54,16 +53,12 @@
         <label for="addressInput">Paste address</label>
         <input id="addressInput" type="text" placeholder="Paste address here" />
 
-        <div class="button-row">
-          <button id="deriveBtn" class="primary-btn">Generate key</button>
-        </div>
+        <button id="deriveBtn" class="primary-btn compact">Generate key</button>
 
         <label for="messageInput">Message</label>
         <textarea id="messageInput" rows="2" placeholder="Enter message to sign"></textarea>
 
-        <div class="button-row">
-          <button id="signBtn" class="secondary-btn">Sign message</button>
-        </div>
+        <button id="signBtn" class="secondary-btn compact">Sign message</button>
 
         <div id="deriveStatus" class="status" aria-live="polite"></div>
       </section>
